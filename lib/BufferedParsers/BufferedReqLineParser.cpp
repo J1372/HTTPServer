@@ -11,15 +11,15 @@ ParseResult BufferedReqLineParser::method_parser(Request& req, std::string_view 
     if (it != new_data.end())
     {
         cur_parser = &BufferedReqLineParser::path_parser;
-        return { ParseResult::Result::UNFINISHED, { it + 1, new_data.end() }};
+        return ParseResult::unfinished({ it + 1, new_data.end() });
     }
     else if (req_method.size() >= 10)
     {
-        return { ParseResult::Result::INVALID, new_data };
+        return ParseResult::invalid(new_data);
     }
     else
     {
-        return { ParseResult::Result::UNFINISHED, "" };
+        return ParseResult::unfinished("");
     }
 }
 
@@ -30,20 +30,20 @@ ParseResult BufferedReqLineParser::path_parser(Request& req, std::string_view ne
 
     if (req_path[0] != '/')
     {
-        return { ParseResult::Result::INVALID, new_data };
+        return ParseResult::invalid(new_data);
     }
     else if (it != new_data.end())
     {
         cur_parser = &BufferedReqLineParser::version_parser;
-        return { ParseResult::Result::UNFINISHED, { it + 1, new_data.end() } };
+        return ParseResult::unfinished({ it + 1, new_data.end() });
     }
     else if (req_path.size() >= 255)
     {
-        return { ParseResult::Result::INVALID, new_data };
+        return ParseResult::invalid(new_data);
     }
     else
     {
-        return { ParseResult::Result::UNFINISHED, "" };
+        return ParseResult::unfinished("");
     }
 }
 
@@ -66,21 +66,21 @@ ParseResult BufferedReqLineParser::version_parser(Request& req, std::string_view
             .set_version(std::move(req_version));
 
         cur_parser = nullptr;
-        return { ParseResult::Result::FINISHED, { it + 1, new_data.end() } };
+        return ParseResult::finished({ it + 1, new_data.end() });
     }
     else if (req_version.size() >= 30)
     {
-        return { ParseResult::Result::INVALID, new_data };
+        return ParseResult::invalid(new_data);
     }
     else
     {
-        return { ParseResult::Result::UNFINISHED, "" };
+        return ParseResult::unfinished("");
     }
 }
 
 ParseResult BufferedReqLineParser::parse(Request& req, std::string_view new_data)
 {
-    if (!cur_parser) return { ParseResult::Result::FINISHED, new_data };
+    if (!cur_parser) return ParseResult::finished(new_data);
 
     ParseResult result = (this->*cur_parser)(req, new_data);
     auto leftover = result.get_leftover();

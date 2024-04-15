@@ -33,10 +33,10 @@ ParseResult BufferedRequestParser::parse(Request& req, std::string_view new_data
 {
     if (std::holds_alternative<std::monostate>(current_parser))
     {
-        return { ParseResult::Result::FINISHED, new_data };
+        return ParseResult::finished(new_data);
     }
 
-    ParseResult result { ParseResult::Result::UNFINISHED, new_data };
+    ParseResult result = ParseResult::unfinished(new_data);
     std::string_view leftover = result.get_leftover();
 
     while (!result.error_occurred() and !leftover.empty() and !std::holds_alternative<std::monostate>(current_parser))
@@ -47,7 +47,7 @@ ParseResult BufferedRequestParser::parse(Request& req, std::string_view new_data
             if constexpr (std::is_same_v<T, std::monostate>)
             {
                 // should never occur.
-                return { ParseResult::Result::INVALID, leftover };
+                return ParseResult::invalid(leftover);
             }
             else
             {
@@ -69,7 +69,7 @@ ParseResult BufferedRequestParser::parse(Request& req, std::string_view new_data
     if (result.is_finished() and !std::holds_alternative<std::monostate>(current_parser))
     {
         // inner parse result is finished - but request parsing is not.
-        return { ParseResult::Result::UNFINISHED, leftover };
+        return ParseResult::unfinished(leftover);
     }
     else
     {

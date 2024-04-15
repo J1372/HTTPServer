@@ -10,16 +10,16 @@ ParseResult BufferedHeaderParser::title_parser(Request& req, std::string_view ne
         {
             cur_header_title += { new_data.begin(), it };
             cur_parser = &BufferedHeaderParser::space_parser;
-            return { ParseResult::Result::UNFINISHED, { it + 1, new_data.end() } };
+            return ParseResult::unfinished({ it + 1, new_data.end() });
         }
         else if (!(std::isalnum(byte) or byte == '-' or byte == '_'))
         {
-            return { ParseResult::Result::INVALID, { it, new_data.end() } };
+            return ParseResult::invalid({ it, new_data.end() });
         }
     }
 
     cur_header_title += new_data;
-    return { ParseResult::Result::UNFINISHED, "" };
+    return ParseResult::unfinished("");
 }
 
 ParseResult BufferedHeaderParser::data_parser(Request& req, std::string_view new_data)
@@ -37,12 +37,12 @@ ParseResult BufferedHeaderParser::data_parser(Request& req, std::string_view new
 
             req.set_header(std::move(cur_header_title), std::move(cur_header_data));
             cur_parser = &BufferedHeaderParser::after_data_parser;
-            return { ParseResult::Result::UNFINISHED, { it + 1, new_data.end() } };
+            return ParseResult::unfinished({ it + 1, new_data.end() });
         }
     }
 
     cur_header_data += new_data;
-    return { ParseResult::Result::UNFINISHED, "" };
+    return ParseResult::unfinished("");
 }
 
 ParseResult BufferedHeaderParser::space_parser(Request& req, std::string_view new_data)
@@ -53,12 +53,11 @@ ParseResult BufferedHeaderParser::space_parser(Request& req, std::string_view ne
         if (byte != ' ')
         {
             cur_parser = &BufferedHeaderParser::data_parser;
-            return { ParseResult::Result::UNFINISHED, { it, new_data.end() }};
+            return ParseResult::unfinished({ it, new_data.end() });
         }
     }
 
-    return { ParseResult::Result::UNFINISHED, "" };
-
+    return ParseResult::unfinished("");
 }
 
 ParseResult BufferedHeaderParser::after_data_parser(Request& req, std::string_view new_data)
@@ -70,34 +69,34 @@ ParseResult BufferedHeaderParser::after_data_parser(Request& req, std::string_vi
         if (byte == '\n')
         {
             cur_parser = nullptr;
-            return { ParseResult::Result::FINISHED, new_data.substr(1) };
+            return ParseResult::finished(new_data.substr(1));
         }
         else
         {
-            return { ParseResult::Result::INVALID, new_data };
+            return ParseResult::invalid(new_data);
         }
     }
     else if (byte == '\r')
     {
         // Can be optimized.
         cr_encountered = true;
-        return { ParseResult::Result::UNFINISHED,  new_data.substr(1) };
+        return ParseResult::unfinished(new_data.substr(1));
     }
     else if (byte == '\n')
     {
         cur_parser = nullptr;
-        return { ParseResult::Result::FINISHED, new_data.substr(1) };
+        return ParseResult::finished(new_data.substr(1));
     }
     else
     {
         cur_parser = &BufferedHeaderParser::title_parser;
-        return { ParseResult::Result::UNFINISHED, new_data };
+        return ParseResult::unfinished(new_data);
     }
 }
 
 ParseResult BufferedHeaderParser::parse(Request& req, std::string_view new_data)
 {
-    if (!cur_parser) return { ParseResult::Result::FINISHED, new_data };
+    if (!cur_parser) return ParseResult::finished(new_data);
 
     // Header: data(\r)\n
     ParseResult result = (this->*cur_parser)(req, new_data);

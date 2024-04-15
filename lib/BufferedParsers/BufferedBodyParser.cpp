@@ -13,7 +13,7 @@ ParseResult BufferedBodyParser::parse(Request& req, std::string_view new_data)
     if (to_go == 0)
     {
         req.set_body(std::move(body));
-        return { ParseResult::Result::FINISHED, new_data };
+        return ParseResult::finished(new_data);
     }
 
     // clips added body if would be more than specified content length.
@@ -26,11 +26,10 @@ ParseResult BufferedBodyParser::parse(Request& req, std::string_view new_data)
     if (content_length == body_bytes_read)
     {
         req.set_body(std::move(body));
-        return { ParseResult::Result::FINISHED, new_data.substr(received_body.size()) };
+        return ParseResult::finished(new_data.substr(received_body.size()));
     }
     else
     {
-        return { ParseResult::Result::UNFINISHED, "" }; // all of received was body.
+        return ParseResult::unfinished(""); // all of received was body.
     }
-
 }
