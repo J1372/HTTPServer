@@ -8,3 +8,5 @@ The Listener and Connection classes interact directly with the C POSIX API and a
 
 ## Example
 Consumer.cpp provides an example of using the library.
+
+The public folder contains test front-end files and need to be located in the same directory as the application if using the consumer example.
