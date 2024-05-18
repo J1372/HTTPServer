@@ -24,7 +24,7 @@ std::string Connection::init_address(const struct sockaddr* sa) const
     }
     else
     {
-        return 0;
+        return "";
     }
 }
 
